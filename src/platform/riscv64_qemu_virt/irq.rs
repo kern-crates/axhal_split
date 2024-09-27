@@ -83,3 +83,11 @@ pub(super) fn init_percpu() {
         sie::set_sext();
     }
 }
+
+pub fn send_ipi(_vector: u8, _dest: u32) {
+    unimplemented!()
+}
+
+pub fn end_of_interrupt() {
+    unimplemented!()
+}

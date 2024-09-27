@@ -82,6 +82,15 @@ pub mod irq {
     /// up in the IRQ handler table and calls the corresponding handler. If
     /// necessary, it also acknowledges the interrupt controller after handling.
     pub fn dispatch_irq(irq_num: usize) {}
+
+    /// 发送yield中断信号
+    pub fn send_ipi(_vector: u8, _dest: u32) {
+        unimplemented!()
+    }
+    
+    pub fn end_of_interrupt() {
+        unimplemented!()
+    }
 }
 
 /// Initializes the platform devices for the primary CPU.

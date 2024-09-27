@@ -63,6 +63,17 @@ pub fn dispatch_irq(vector: usize) {
     unsafe { local_apic().end_of_interrupt() };
 }
 
+#[cfg(feature = "irq")]
+pub fn send_ipi(vector: u8, dest: u32) {
+    let apic = local_apic();
+    unsafe { apic.send_ipi(vector, dest) }
+}
+
+#[cfg(feature = "irq")]
+pub fn end_of_interrupt() {
+    unsafe { local_apic().end_of_interrupt() };
+}
+
 pub(super) fn local_apic<'a>() -> &'a mut LocalApic {
     // It's safe as LAPIC is per-cpu.
     unsafe { LOCAL_APIC.as_mut().unwrap() }

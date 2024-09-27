@@ -57,3 +57,12 @@ pub(crate) fn init_primary() {
 pub(crate) fn init_secondary() {
     GICC.init();
 }
+
+/// 发送yield中断信号
+pub fn send_ipi(_vector: u8, _dest: u32) {
+    unimplemented!()
+}
+
+pub fn end_of_interrupt() {
+    unimplemented!()
+}
