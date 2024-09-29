@@ -5,7 +5,7 @@ use memory_addr::PhysAddr;
 use crate::mem::phys_to_virt;
 
 const GICD_BASE: PhysAddr = pa!(axconfig::GICD_PADDR);
-const GICR_BASE: PhysAddr = pa!(axconfig::GICC_PADDR);
+const GICR_BASE: PhysAddr = pa!(axconfig::GICR_PADDR);
 
 /// The maximum number of IRQs.
 pub const MAX_IRQ_COUNT: usize = 1024;
