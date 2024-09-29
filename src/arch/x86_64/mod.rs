@@ -108,3 +108,21 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(fs_base: usize) {
     unsafe { msr::wrmsr(msr::IA32_FS_BASE, fs_base as u64) }
 }
+
+/// 内存屏障
+#[inline]
+pub fn vm_barrier() {}
+
+/// Reads the `TTBR0_EL1` register.
+pub fn read_page_table_root0() -> PhysAddr {
+    read_page_table_root()
+}
+
+/// Writes the `TTBR0_EL1` register.
+///
+/// # Safety
+///
+/// This function is unsafe as it changes the virtual memory address space.
+pub unsafe fn write_page_table_root0(root_paddr: PhysAddr) {
+    write_page_table_root(root_paddr);
+}

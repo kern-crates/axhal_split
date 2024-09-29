@@ -135,3 +135,9 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(tpidr_el0: usize) {
     TPIDR_EL0.set(tpidr_el0 as _)
 }
+
+/// 内存屏障
+#[inline]
+pub fn vm_barrier() {
+    unsafe { core::arch::asm!("ic iallu; dsb sy; isb") };
+}
