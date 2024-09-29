@@ -81,8 +81,7 @@ pub(crate) fn init_early() {
 pub(crate) fn init_percpu() {
     #[cfg(feature = "irq")]
     {
-        // CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
-        // CNTP_TVAL_EL0.set(0);
+        init_early();
         TIMER.lock().init(32);
         crate::platform::irq::set_enable(crate::platform::irq::TIMER_IRQ_NUM, true);
     }
