@@ -105,3 +105,5 @@ pub(super) fn init_secondary() {
         super::apic::local_apic().enable_timer();
     }
 }
+
+pub fn reset_timer() {}

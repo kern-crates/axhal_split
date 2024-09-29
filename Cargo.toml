@@ -24,6 +24,7 @@ log = "0.4.21"
 cfg-if = "1.0"
 linkme = "0.3"
 bitflags = "2.6"
+spin = "0.9"
 static_assertions = "1.1.0"
 kernel_guard = "0.1"
 kspin = "0.1"
@@ -57,6 +58,7 @@ arm_gicv2 = "0.1"
 arm_pl011 = "0.1"
 arm_pl031 = { version = "0.2", optional = true }
 dw_apb_uart = "0.1"
+arm-gic = { path = "../../../arm-gic" }
 
 [build-dependencies]
 axconfig = { workspace = true }

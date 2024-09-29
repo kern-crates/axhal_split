@@ -1,68 +1,87 @@
-use crate::{irq::IrqHandler, mem::phys_to_virt};
-use arm_gicv2::{translate_irq, GicCpuInterface, GicDistributor, InterruptType};
+use arm_gic::gicv3::{GicV3, IntId};
 use kspin::SpinNoIrq;
 use memory_addr::PhysAddr;
+
+use crate::mem::phys_to_virt;
+
+const GICD_BASE: PhysAddr = pa!(axconfig::GICD_PADDR);
+const GICR_BASE: PhysAddr = pa!(axconfig::GICC_PADDR);
 
 /// The maximum number of IRQs.
 pub const MAX_IRQ_COUNT: usize = 1024;
 
 /// The timer IRQ number.
-pub const TIMER_IRQ_NUM: usize = translate_irq(14, InterruptType::PPI).unwrap();
+pub const TIMER_IRQ_NUM: usize = 30;
 
 /// The UART IRQ number.
-pub const UART_IRQ_NUM: usize = translate_irq(axconfig::UART_IRQ, InterruptType::SPI).unwrap();
+pub const UART_IRQ_NUM: usize = 33;
 
-const GICD_BASE: PhysAddr = pa!(axconfig::GICD_PADDR);
-const GICC_BASE: PhysAddr = pa!(axconfig::GICC_PADDR);
+struct GicV3Wrapper {
+    inner: GicV3,
+}
 
-static GICD: SpinNoIrq<GicDistributor> =
-    SpinNoIrq::new(GicDistributor::new(phys_to_virt(GICD_BASE).as_mut_ptr()));
+unsafe impl Send for GicV3Wrapper {}
+unsafe impl Sync for GicV3Wrapper {}
 
-// per-CPU, no lock
-static GICC: GicCpuInterface = GicCpuInterface::new(phys_to_virt(GICC_BASE).as_mut_ptr());
+static GIC_V3: SpinNoIrq<Option<GicV3Wrapper>> = SpinNoIrq::new(None);
 
 /// Enables or disables the given IRQ.
 pub fn set_enable(irq_num: usize, enabled: bool) {
-    trace!("GICD set enable: {} {}", irq_num, enabled);
-    GICD.lock().set_enable(irq_num as _, enabled);
-}
-
-/// Registers an IRQ handler for the given IRQ.
-///
-/// It also enables the IRQ if the registration succeeds. It returns `false` if
-/// the registration failed.
-pub fn register_handler(irq_num: usize, handler: IrqHandler) -> bool {
-    trace!("register handler irq {}", irq_num);
-    crate::irq::register_handler_common(irq_num, handler)
-}
-
-/// Dispatches the IRQ.
-///
-/// This function is called by the common interrupt handler. It looks
-/// up in the IRQ handler table and calls the corresponding handler. If
-/// necessary, it also acknowledges the interrupt controller after handling.
-pub fn dispatch_irq(_unused: usize) {
-    GICC.handle_irq(|irq_num| crate::irq::dispatch_irq_common(irq_num as _));
+    GIC_V3
+        .lock()
+        .as_mut()
+        .unwrap()
+        .inner
+        .enable_interrupt(IntId::from(irq_num as u32), enabled);
 }
 
 /// Initializes GICD, GICC on the primary CPU.
 pub(crate) fn init_primary() {
-    info!("Initialize GICv2...");
-    GICD.lock().init();
-    GICC.init();
-}
-
-/// Initializes GICC on secondary CPUs.
-#[cfg(feature = "smp")]
-pub(crate) fn init_secondary() {
-    GICC.init();
+    let mut gic_v3_lock = GIC_V3.lock();
+    unsafe {
+        *gic_v3_lock = Some(GicV3Wrapper {
+            inner: GicV3::new(
+                phys_to_virt(GICD_BASE).as_mut_ptr_of(),
+                phys_to_virt(GICR_BASE).as_mut_ptr_of(),
+            ),
+        })
+    }
+    let gic_v3 = gic_v3_lock.as_mut().unwrap();
+    gic_v3.inner.setup();
+    gic_v3.inner.enable_interrupt(IntId::sgi(3), true);
 }
 
 /// 发送yield中断信号
 pub fn send_ipi(_vector: u8, _dest: u32) {
+    use aarch64_cpu::registers::Readable;
+    let mpidr = aarch64_cpu::registers::MPIDR_EL1.get();
+    let aff1 = mpidr >> 8 & 0xff;
+    let aff2 = mpidr >> 16 & 0xff;
+    let aff3 = mpidr >> 32 & 0xff;
+    let sgi_intid = IntId::sgi(3);
+    GicV3::send_sgi(
+        sgi_intid,
+        arm_gic::gicv3::SgiTarget::List {
+            affinity3: aff3 as _,
+            affinity2: aff2 as _,
+            affinity1: aff1 as _,
+            target_list: 0b1,
+        },
+    );
+}
+
+pub fn end_of_interrupt(irq: usize) {
+    GicV3::end_interrupt(IntId::from(irq as u32));
+}
+
+pub fn get_and_acknowledge_interrupt() -> usize {
+    u32::from(GicV3::get_and_acknowledge_interrupt().unwrap()) as _
+}
+
+pub fn dispatch_irq(_unused: usize) {
     unimplemented!()
 }
 
-pub fn end_of_interrupt() {
+pub fn register_handler(irq_num: usize, handler: crate::irq::IrqHandler) -> bool {
     unimplemented!()
 }

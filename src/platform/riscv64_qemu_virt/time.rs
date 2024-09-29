@@ -58,3 +58,7 @@ pub(super) fn init_percpu() {
     #[cfg(feature = "irq")]
     sbi_rt::set_timer(0);
 }
+
+pub fn reset_timer() {
+    unimplemented!()
+}

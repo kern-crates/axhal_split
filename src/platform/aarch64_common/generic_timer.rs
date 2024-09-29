@@ -1,7 +1,9 @@
 #![allow(unused_imports)]
 
 use aarch64_cpu::registers::{CNTFRQ_EL0, CNTPCT_EL0, CNTP_CTL_EL0, CNTP_TVAL_EL0};
+use bitflags::bitflags;
 use int_ratio::Ratio;
+use spin::{Lazy, Mutex};
 use tock_registers::interfaces::{Readable, Writeable};
 
 static mut CNTPCT_TO_NANOS_RATIO: Ratio = Ratio::zero();
@@ -79,8 +81,80 @@ pub(crate) fn init_early() {
 pub(crate) fn init_percpu() {
     #[cfg(feature = "irq")]
     {
-        CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
-        CNTP_TVAL_EL0.set(0);
+        // CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
+        // CNTP_TVAL_EL0.set(0);
+        TIMER.lock().init(32);
         crate::platform::irq::set_enable(crate::platform::irq::TIMER_IRQ_NUM, true);
+    }
+}
+
+pub fn reset_timer() {
+    let mut timer = TIMER.lock();
+    timer.clear_irq();
+    timer.reload_count();
+}
+
+static TIMER: Lazy<Mutex<GenericTimer>> = Lazy::new(|| {
+    let timer = GenericTimer {
+        clk_freq: 0,
+        reload_count: 0,
+    };
+    Mutex::new(timer)
+});
+
+bitflags! {
+    struct TimerCtrlFlags: u64 {
+        const ENABLE = 1 << 0;
+        const IMASK = 1 << 1;
+        const ISTATUS = 1 << 2;
+    }
+}
+
+struct GenericTimer {
+    clk_freq: u64,
+    reload_count: u64,
+}
+
+impl GenericTimer {
+    fn init(&mut self, num_per_sec: usize) {
+        let clk_freq = CNTFRQ_EL0.get();
+        self.clk_freq = clk_freq;
+        self.reload_count = clk_freq / num_per_sec as u64;
+
+        CNTP_TVAL_EL0.set(self.reload_count as u64);
+
+        let mut ctrl = TimerCtrlFlags::from_bits_truncate(CNTP_CTL_EL0.get());
+        ctrl.insert(TimerCtrlFlags::ENABLE);
+        ctrl.remove(TimerCtrlFlags::IMASK);
+        CNTP_CTL_EL0.set(ctrl.bits());
+    }
+
+    fn disable() {
+        let mut ctrl = TimerCtrlFlags::from_bits_truncate(CNTP_CTL_EL0.get());
+        ctrl.remove(TimerCtrlFlags::ENABLE);
+        CNTP_CTL_EL0.set(ctrl.bits());
+    }
+
+    fn set_irq(&mut self) {
+        let mut ctrl = TimerCtrlFlags::from_bits_truncate(CNTP_CTL_EL0.get());
+        ctrl.remove(TimerCtrlFlags::IMASK);
+        CNTP_CTL_EL0.set(ctrl.bits());
+    }
+
+    fn clear_irq(&mut self) {
+        let mut ctrl = TimerCtrlFlags::from_bits_truncate(CNTP_CTL_EL0.get());
+
+        if ctrl.contains(TimerCtrlFlags::ISTATUS) {
+            ctrl.insert(TimerCtrlFlags::IMASK);
+            CNTP_CTL_EL0.set(ctrl.bits());
+        }
+    }
+
+    fn reload_count(&mut self) {
+        let mut ctrl = TimerCtrlFlags::from_bits_truncate(CNTP_CTL_EL0.get());
+        ctrl.insert(TimerCtrlFlags::ENABLE);
+        ctrl.remove(TimerCtrlFlags::IMASK);
+        CNTP_TVAL_EL0.set(self.reload_count);
+        CNTP_CTL_EL0.set(ctrl.bits());
     }
 }

@@ -70,7 +70,7 @@ pub fn send_ipi(vector: u8, dest: u32) {
 }
 
 #[cfg(feature = "irq")]
-pub fn end_of_interrupt() {
+pub fn end_of_interrupt(_irq: usize) {
     unsafe { local_apic().end_of_interrupt() };
 }
 

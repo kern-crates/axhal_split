@@ -58,6 +58,10 @@ pub mod time {
     pub fn epochoffset_nanos() -> u64 {
         0
     }
+
+    pub fn reset_timer() {
+        unimplemented!()
+    }
 }
 
 #[cfg(feature = "irq")]
@@ -87,8 +91,12 @@ pub mod irq {
     pub fn send_ipi(_vector: u8, _dest: u32) {
         unimplemented!()
     }
-    
-    pub fn end_of_interrupt() {
+
+    pub fn end_of_interrupt(_irq: usize) {
+        unimplemented!()
+    }
+
+    pub fn get_and_acknowledge_interrupt() -> usize {
         unimplemented!()
     }
 }
