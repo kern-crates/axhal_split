@@ -88,6 +88,12 @@ pub fn send_ipi(_vector: u8, _dest: u32) {
     unimplemented!()
 }
 
-pub fn end_of_interrupt(_irq: usize) {
+pub fn get_and_acknowledge_interrupt() -> usize {
+    //plic
+    unimplemented!()
+}
+
+pub fn end_of_interrupt(irq: usize) {
+    //plic
     unimplemented!()
 }
