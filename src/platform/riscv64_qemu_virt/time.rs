@@ -59,6 +59,26 @@ pub(super) fn init_percpu() {
     sbi_rt::set_timer(0);
 }
 
+fn update_timer() {
+    const PERIODIC_INTERVAL_NANOS: u64 =
+        crate::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
+
+    // Fixme
+    //#[percpu::def_percpu]
+    //static NEXT_DEADLINE: u64 = 0;
+    static mut NEXT_DEADLINE: u64 = 0;
+
+    let now_ns = ticks_to_nanos(current_ticks());
+    // Safety: we have disabled preemption in IRQ handler.
+    let mut deadline = unsafe { NEXT_DEADLINE };
+    if now_ns >= deadline {
+        deadline = now_ns + PERIODIC_INTERVAL_NANOS;
+    }
+    unsafe { NEXT_DEADLINE = deadline + PERIODIC_INTERVAL_NANOS };
+
+    set_oneshot_timer(deadline);
+}
+
 pub fn reset_timer() {
-    unimplemented!()
+    update_timer();
 }

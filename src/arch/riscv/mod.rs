@@ -111,19 +111,21 @@ pub unsafe fn write_thread_pointer(tp: usize) {
 /// 内存屏障
 #[inline]
 pub fn vm_barrier() {
-    todo!()
+    unsafe {
+        core::arch::asm!("fence iorw, iorw");
+    }
 }
 
-/// Reads the `TTBR0_EL1` register.
+/// Reads the SATP register for user.
 pub fn read_page_table_root0() -> PhysAddr {
-    todo!()
+    read_page_table_root()
 }
 
-/// Writes the `TTBR0_EL1` register.
+/// Writes the SATP register for user.
 ///
 /// # Safety
 ///
 /// This function is unsafe as it changes the virtual memory address space.
 pub unsafe fn write_page_table_root0(root_paddr: PhysAddr) {
-    todo!()
+    write_page_table_root(root_paddr)
 }
