@@ -58,7 +58,7 @@ cfg_if::cfg_if! {
         pub type PageTable = page_table_multiarch::x86_64::X64PageTable<PagingHandlerImpl>;
     } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
         /// The architecture-specific page table.
-        pub type PageTable = page_table_multiarch::riscv::Sv39PageTable<PagingHandlerImpl>;
+        pub type PageTable = page_table_multiarch::riscv::Sv48PageTable<PagingHandlerImpl>;
     } else if #[cfg(target_arch = "aarch64")]{
         /// The architecture-specific page table.
         pub type PageTable = page_table_multiarch::aarch64::A64PageTable<PagingHandlerImpl>;

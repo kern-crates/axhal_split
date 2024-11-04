@@ -5,6 +5,8 @@ use core::fmt;
 #[doc(no_inline)]
 pub use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, PAGE_SIZE_4K};
 
+pub use axconfig::{PHYS_VIRT_OFFSET, TASK_STACK_SIZE};
+
 bitflags::bitflags! {
     /// The flags of a physical memory region.
     pub struct MemRegionFlags: usize {

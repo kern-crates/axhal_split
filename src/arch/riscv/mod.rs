@@ -60,7 +60,7 @@ pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
     let old_root = read_page_table_root();
     trace!("set page table root: {:#x} => {:#x}", old_root, root_paddr);
     if old_root != root_paddr {
-        satp::set(satp::Mode::Sv39, 0, root_paddr.as_usize() >> 12);
+        satp::set(satp::Mode::Sv48, 0, root_paddr.as_usize() >> 12);
         asm::sfence_vma_all();
     }
 }
