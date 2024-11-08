@@ -84,8 +84,17 @@ pub(super) fn init_percpu() {
     }
 }
 
-pub fn send_ipi(_vector: u8, _dest: u32) {
-    unimplemented!()
+fn cpu_id() -> u8 {
+    let mut cpu_id;
+    unsafe { core::arch::asm!("mv {0}, tp", out(reg) cpu_id) };
+    cpu_id
+}
+
+pub fn send_ipi(vector: u8, dest: u32) {
+    let cpuid = dest;
+    log::debug!("send ipi [{}] => [{}], vector={:#x}", cpu_id(), cpuid, vector);
+    let mask:usize = 1 << cpuid;
+    sbi_rt::legacy::send_ipi(&mask as *const usize as usize);
 }
 
 pub fn get_and_acknowledge_interrupt() -> usize {
