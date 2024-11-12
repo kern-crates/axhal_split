@@ -104,5 +104,6 @@ pub fn get_and_acknowledge_interrupt() -> usize {
 
 pub fn end_of_interrupt(irq: usize) {
     //plic
-    unimplemented!()
+    // unimplemented!()
+    sbi_rt::legacy::clear_ipi();
 }
